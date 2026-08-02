@@ -1,0 +1,10 @@
+.mvn
+target
+.git
+.gitignore
+.idea
+.classpath
+.project
+*.log
+node_modules
+**/node_modules
