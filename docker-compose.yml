@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app-dev:
+    build: .
+    container_name: cafe-online-dev
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - JWT_SECRET=${JWT_SECRET:-devsecret}
+      - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-86400000}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/cafemgmt_dev?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=appuser
+      - SPRING_DATASOURCE_PASSWORD=apppass
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+
+  app-qa:
+    build: .
+    container_name: cafe-online-qa
+    environment:
+      - SPRING_PROFILES_ACTIVE=qa
+      - JWT_SECRET=${JWT_SECRET:-qasecret}
+      - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-86400000}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/cafemgmt_qa?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=appuser
+      - SPRING_DATASOURCE_PASSWORD=apppass
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+
+volumes:
+  db-data:
+    name: cafe_online_db_data
+
