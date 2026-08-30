@@ -3,6 +3,8 @@ package com.example.cafe_online.Util;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -18,31 +20,47 @@ import java.util.function.Function;
 @Component
 public class jwtUtil {
 
+    private static final Logger log = LoggerFactory.getLogger(jwtUtil.class);
+
     private final SecretKey key;
     private final long expirationMs;
     private final String issuer;
 
     // inject via application.properties
     public jwtUtil(
-            @Value("${jwt.secret}") String secretBase64OrRaw,
+            @Value("${jwt.secret:}") String secretBase64OrRaw,
             @Value("${jwt.expiration-ms:86400000}") long expirationMs,
             @Value("${jwt.issuer:cafe_online}") String issuer
     ) {
         this.expirationMs = expirationMs;
         this.issuer = issuer;
 
-        // Accept either base64-encoded or raw secret. If looks like base64, decode.
-        SecretKey tmp;
-        try {
-            // try base64 decode
-            byte[] keyBytes = Decoders.BASE64.decode(secretBase64OrRaw);
-            tmp = Keys.hmacShaKeyFor(keyBytes);
-        } catch (Exception e) {
-            // fallback: use raw bytes from UTF-8
-            byte[] keyBytes = secretBase64OrRaw.getBytes(StandardCharsets.UTF_8);
-            tmp = Keys.hmacShaKeyFor(keyBytes);
+        byte[] keyBytes = null;
+
+        if (secretBase64OrRaw != null && !secretBase64OrRaw.isBlank()) {
+            try {
+                // Try Base64 first
+                keyBytes = Decoders.BASE64.decode(secretBase64OrRaw);
+            } catch (Exception e) {
+                // If not Base64, use the raw UTF-8 bytes
+                keyBytes = secretBase64OrRaw.getBytes(StandardCharsets.UTF_8);
+            }
+
+            if (keyBytes.length >= 32) {
+                this.key = Keys.hmacShaKeyFor(keyBytes);
+                return;
+            }
+
+            // Provided secret too short - log and fall through to generate a secure key for dev
+            log.warn("Configured JWT secret is too short ({} bytes). A 32+ byte key is required for HS256. " +
+                    "Falling back to a generated key for development. Set a proper jwt.secret for production.", keyBytes.length);
+        } else {
+            log.warn("No jwt.secret configured. Generating an ephemeral key for development. " +
+                    "Configure jwt.secret or set environment variable JWT_SECRET for persistent tokens in other environments.");
         }
-        this.key = tmp;
+
+        // Generate a secure random key for HS256 so the application can start in local/dev
+        this.key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
     }
 
     public String generateToken(String subject, Map<String, Object> extraClaims) {
