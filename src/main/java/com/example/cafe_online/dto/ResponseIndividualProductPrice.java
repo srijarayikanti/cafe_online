@@ -7,5 +7,6 @@ import org.springframework.data.relational.core.sql.In;
 public class ResponseIndividualProductPrice {
     private Integer productId;
     private Double price;
+    private String productName;
     private Integer quantity;
 }

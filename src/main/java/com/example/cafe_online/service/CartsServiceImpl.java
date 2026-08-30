@@ -6,6 +6,8 @@ import com.example.cafe_online.dto.ResponseUserCartList;
 import com.example.cafe_online.dto.requestCartDto;
 import com.example.cafe_online.entity.Product;
 import com.example.cafe_online.entity.UserCart;
+import com.example.cafe_online.exception.ResourceNotFoundException;
+import com.example.cafe_online.exception.ValidationException;
 import com.example.cafe_online.repository.UserCartRepository;
 import com.example.cafe_online.repository.productRepository;
 import jakarta.transaction.Transactional;
@@ -33,38 +35,49 @@ public class CartsServiceImpl implements CartsService{
     @Transactional
     public ResponseEntity<?> addToCart(requestCartDto request) {
         log.debug("Received addToCart request: {}", request);
+        
+        if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
+            throw new ValidationException("Cart items cannot be empty");
+        }
+        
         int userId = request.getCustomerId();
+        if (userId <= 0) {
+            throw new ValidationException("Invalid customer ID");
+        }
 
-        // Process each requested item: create or update a User_Cart row
         for (RequestCardListDto item : request.getItems()) {
             int productId = item.getProductId();
             int quantityToAdd = item.getQuantity();
 
-            // Validate product exists
+            if (quantityToAdd <= 0) {
+                throw new ValidationException("Quantity must be greater than 0 for product: " + productId);
+            }
+
             Product product = productRepository.findById(productId)
-                    .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Product", 
+                            "Product not found with ID: " + productId));
             log.debug("Processing productId {} with quantity {}", productId, quantityToAdd);
-            // Upsert: if row exists for user+product, increase quantity; else create new
+            
             UserCart cartRow = userCartRepository.findByUserIdAndProductId(userId, productId)
                     .orElseGet(() -> {
                         UserCart newRow = new UserCart();
                         newRow.setUserId(userId);
                         newRow.setProductId(productId);
                         newRow.setPrice(product.getPrice());
-                        newRow.setQuantity(0); // will add below
+                        newRow.setQuantity(0);
                         newRow.setTotal_price(0.0);
                         return newRow;
                     });
             log.debug("Current cart row before update: {}", cartRow);
             int newQuantity = cartRow.getQuantity() + quantityToAdd;
             cartRow.setQuantity(newQuantity);
-            cartRow.setPrice(product.getPrice()); // ensure latest price stored
+            cartRow.setPrice(product.getPrice());
             cartRow.setTotal_price(product.getPrice() * newQuantity);
 
             userCartRepository.save(cartRow);
         }
         log.debug("Final cart rows for user {}: {}", userId, userCartRepository.findByUserId(userId));
-        // Build response from saved rows for this user
+        
         List<UserCart> savedRows = userCartRepository.findByUserId(userId);
 
         ResponseUserCartList response = getResponseUserCartList(userId, savedRows);
@@ -72,16 +85,19 @@ public class CartsServiceImpl implements CartsService{
         return ResponseEntity.ok(response);
     }
 
-    private static ResponseUserCartList getResponseUserCartList(int userId, List<UserCart> savedRows) {
+    private ResponseUserCartList getResponseUserCartList(int userId, List<UserCart> savedRows) {
         ResponseUserCartList response = new ResponseUserCartList();
         response.setUserId(userId);
         log.debug("Building response for userId {} with cart rows: {}", userId, savedRows);
         List<ResponseIndividualProductPrice> productPriceList = new ArrayList<>();
         double total = 0.0;
+        String productName = "";
         for (UserCart row : savedRows) {
             ResponseIndividualProductPrice r = new ResponseIndividualProductPrice();
+            productName= productRepository.getProductNameById(row.getProductId());
             r.setProductId(row.getProductId());
             r.setPrice(row.getPrice());
+            r.setProductName(productName);
             r.setQuantity(row.getQuantity());
             productPriceList.add(r);
 
@@ -95,6 +111,11 @@ public class CartsServiceImpl implements CartsService{
     @Override
     public ResponseEntity<?> getCartByUserId(int userId) {
         log.debug("Received getCartByUserId request for userId: {}", userId);
+        
+        if (userId <= 0) {
+            throw new ValidationException("Invalid user ID");
+        }
+        
         List<UserCart> cartItems = userCartRepository.findByUserId(userId);
         if (cartItems.isEmpty()) {
             return ResponseEntity.ok("Cart is empty for user: " + userId);
@@ -104,3 +125,4 @@ public class CartsServiceImpl implements CartsService{
         return ResponseEntity.ok(response);
     }
 }
+
