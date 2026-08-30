@@ -6,9 +6,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
+@SecurityRequirement(name = "bearerAuth")
+@Tag(name = "Cart", description = "Operations related to cart management")
 public interface cartController {
 
     @Operation(
@@ -24,12 +30,6 @@ public interface cartController {
                     @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = UserCart.class))),
             }
-    )
-    @RequestMapping(
-            method = RequestMethod.POST,
-            value = "/cart/addToCart",
-            produces = "application/json",
-            consumes = "application/json"
     )
     @CrossOrigin
     ResponseEntity<?> addToCart(@RequestBody requestCartDto request);
@@ -47,11 +47,6 @@ public interface cartController {
                     @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = UserCart.class))),
             }
-    )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/cart/getCartByUserId",
-            produces = "application/json"
     )
     @CrossOrigin
     ResponseEntity<?> getCartByUserId(@RequestParam int userId);

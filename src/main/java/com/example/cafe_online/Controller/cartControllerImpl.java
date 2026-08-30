@@ -4,9 +4,11 @@ import com.example.cafe_online.dto.requestCartDto;
 import com.example.cafe_online.service.CartsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/api/cart")
+@CrossOrigin
 @Slf4j
 public class cartControllerImpl implements cartController {
     private final CartsService cartService;
@@ -16,7 +18,8 @@ public class cartControllerImpl implements cartController {
     }
 
     @Override
-    public ResponseEntity<?> addToCart(requestCartDto request) {
+    @PostMapping(value = "/addToCart", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<?> addToCart(@RequestBody requestCartDto request) {
         try {
             return cartService.addToCart(request);
         } catch (Exception e) {
@@ -26,7 +29,8 @@ public class cartControllerImpl implements cartController {
     }
 
     @Override
-    public ResponseEntity<?> getCartByUserId(int userId) {
+    @GetMapping(value = "/getCartByUserId", produces = "application/json")
+    public ResponseEntity<?> getCartByUserId(@RequestParam int userId) {
         try {
             return cartService.getCartByUserId(userId);
         } catch (Exception e) {

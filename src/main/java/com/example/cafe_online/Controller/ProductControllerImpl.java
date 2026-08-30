@@ -1,6 +1,8 @@
 package com.example.cafe_online.Controller;
 
 import com.example.cafe_online.entity.Product;
+import com.example.cafe_online.service.ProductService;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -11,13 +13,13 @@ import java.util.Optional;
 
 @RestController
 @Slf4j
+@AllArgsConstructor
 public class ProductControllerImpl implements ProductController {
 
     private final productRepository productRepository;
+    private final ProductService productService;
 
-    public ProductControllerImpl(productRepository productRepository) {
-        this.productRepository = productRepository;
-    }
+
 
     @Override
     public ResponseEntity<?> getAllProducts() {
@@ -44,4 +46,17 @@ public class ProductControllerImpl implements ProductController {
         return ResponseEntity.ok(products);
     }
 
+    @Override
+    public ResponseEntity<?> saveProductDetails(List<Product> products) {
+        // Implementation for saving product details
+        List<Product> savedProducts = productRepository.saveAll(products);
+        return ResponseEntity.ok(savedProducts);
+    }
+
+    @Override
+    public ResponseEntity<?> getAllCategories() {
+        // Implementation for getting all categories
+
+        return productService.getAllCategories();
+    }
 }

@@ -81,4 +81,14 @@ public class ProductServiceImpl implements ProductService {
     public ResponseEntity<?> getAllProducts(){
         return ResponseEntity.ok(productRepository.findAll());
     }
+
+    @Override
+    public ResponseEntity<?> getAllCategories() {
+        List<String> categories = productRepository.findAll()
+                .stream()
+                .map(Product::getCategory)
+                .distinct()
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(categories);
+    }
 }
