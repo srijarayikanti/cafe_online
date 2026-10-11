@@ -8,6 +8,7 @@ import com.example.cafe_online.repository.userRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -19,11 +20,14 @@ public class userServiceImpl implements userService {
 
     private final userRepository userRepository;
     private final jwtUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;
 
-    public userServiceImpl(userRepository userRepository, jwtUtil jwtUtil) {
+    public userServiceImpl(userRepository userRepository, jwtUtil jwtUtil, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
     }
+    
     @Override
     public ResponseEntity<?> saveUserDetails(RequestUser requestUser) {
         Optional<User> userOpt = userRepository.findByUserName(requestUser.getUserName());
@@ -32,20 +36,33 @@ public class userServiceImpl implements userService {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Username");
         }
         User user = userOpt.get();
-        // Check if passwords match
-        if (user.getPassword().equals(requestUser.getPassword())) {
-            // In a real app, you would return a JWT token here
-            String token = jwtUtil.generateTokenForUsername(user.getUserName());
-            log.debug("Generated JWT token for user {}: {}", user.getUserName(), token);
-
-            return ResponseEntity.ok().body(
-                    Map.of(
-                            "message", "Login Successful",
-                            "token", token
-                    )
-            );
-        } else {
+        
+        // Check password: support both encrypted and plain text (for migration)
+        boolean passwordMatches = passwordEncoder.matches(requestUser.getPassword(), user.getPassword()) 
+                                  || user.getPassword().equals(requestUser.getPassword());
+        
+        if (!passwordMatches) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Password");
         }
+        
+        // If password was plain text, encrypt it now (migration)
+        if (user.getPassword().equals(requestUser.getPassword())) {
+            user.setPassword(passwordEncoder.encode(requestUser.getPassword()));
+            userRepository.save(user);
+            log.debug("Migrated plain text password to encrypted for user: {}", user.getUserName());
+        }
+        
+        // Generate JWT token for user
+        String token = jwtUtil.generateTokenForUsername(user.getUserName());
+        log.debug("Generated JWT token for user {}: {}", user.getUserName(), token);
+
+        return ResponseEntity.ok().body(
+                Map.of(
+                        "message", "Login Successful",
+                        "token", token,
+                        "userId", user.getUserId(),
+                        "username", user.getUserName()
+                )
+        );
     }
 }
