@@ -1,16 +1,11 @@
 package com.example.cafe_online.Controller;
 
-import com.example.cafe_online.Util.jwtUtil;
-import lombok.Getter;
-import org.jspecify.annotations.Nullable;
+import com.example.cafe_online.entity.User;
+import com.example.cafe_online.repository.userRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,34 +15,23 @@ import java.util.Map;
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final jwtUtil jwtUtil;
-    private final UserDetailsService userDetailsService;
+    private final userRepository userRepository;
 
-    public AuthController(AuthenticationManager authenticationManager, jwtUtil jwtUtil, UserDetailsService userDetailsService) {
-        this.authenticationManager = authenticationManager;
-        this.jwtUtil = jwtUtil;
-        this.userDetailsService = userDetailsService;
+    public AuthController(userRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword())
-        );
-
-        UserDetails ud = userDetailsService.loadUserByUsername(req.getUsername());
-        String token = jwtUtil.generateTokenForUsername(ud.getUsername());
-        return ResponseEntity.ok(Map.of("token", token));
-    }
-
-    public static class LoginRequest {
-        @Getter
-        public String username;
-        public String password;
-
-        public @Nullable Object getPassword() {
-            return password;
-        }
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        
+        return userRepository.findByUserName(username)
+                .map(user -> ResponseEntity.ok().body(Map.of(
+                        "userId", user.getUserId(),
+                        "username", user.getUserName()
+                )))
+                .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "error", "User not found"
+                )));
     }
 }

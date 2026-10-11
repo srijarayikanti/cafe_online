@@ -124,5 +124,38 @@ public class CartsServiceImpl implements CartsService{
         ResponseUserCartList response = getResponseUserCartList(userId, cartItems);
         return ResponseEntity.ok(response);
     }
+
+    @Override
+    public ResponseEntity<?> clearCartByUserIdAndProductIdAndQuantity(int userId, int productId, int quantity) {
+        log.debug("Received clearCartByUserIdAndProductIdAndQuantity request for userId: {}, productId: {}, quantity: {}", userId, productId, quantity);
+
+        if (userId <= 0 || productId <= 0 || quantity <= 0) {
+            throw new ValidationException("Invalid user ID, product ID, or quantity");
+        }
+
+        UserCart cartRow = userCartRepository.findByUserIdAndProductId(userId, productId)
+                .orElseThrow(() -> new ResourceNotFoundException("UserCart",
+                        "Cart item not found for user ID: " + userId + " and product ID: " + productId));
+
+        if (cartRow.getQuantity() < quantity) {
+            throw new ValidationException("Requested quantity exceeds available quantity in cart");
+        }
+
+        int newQuantity = cartRow.getQuantity() - quantity;
+        
+        if (newQuantity <= 0) {
+            // Delete the row if quantity becomes 0 or less
+            userCartRepository.delete(cartRow);
+            log.debug("Deleted cart row for userId {} and productId {} as quantity became 0", userId, productId);
+            return ResponseEntity.ok("Cart item deleted successfully for user ID: " + userId + " and product ID: " + productId);
+        } else {
+            // Update the quantity and total price
+            cartRow.setQuantity(newQuantity);
+            cartRow.setTotal_price(cartRow.getPrice() * newQuantity);
+            userCartRepository.save(cartRow);
+            log.debug("Updated cart row for userId {} and productId {}", userId, productId);
+            return ResponseEntity.ok("Cart item updated successfully for user ID: " + userId + " and product ID: " + productId);
+        }
+    }
 }
 

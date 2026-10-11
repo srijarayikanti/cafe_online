@@ -18,6 +18,9 @@ public class Customer {
     @Column(name = "Name")
     private String name;
 
+    @Column(name = "UserName")
+    private String userName;
+
     @Column(name = "Email")
     private String email;
 
@@ -29,5 +32,8 @@ public class Customer {
 
     @Column(name = "VisitTime")
     private LocalDateTime visitTime;
+
+    @Column(name = "password")
+    private String password;
     
 }

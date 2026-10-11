@@ -8,4 +8,5 @@ public interface CartsService {
 
     ResponseEntity<?> getCartByUserId(int userId);
 
+    ResponseEntity<?> clearCartByUserIdAndProductIdAndQuantity(int userId, int productId, int quantity);
 }

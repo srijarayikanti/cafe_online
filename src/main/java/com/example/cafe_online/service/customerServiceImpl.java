@@ -6,27 +6,36 @@ import com.example.cafe_online.dto.ResponseCustomer;
 import com.example.cafe_online.dto.customerRequestDto;
 import com.example.cafe_online.entity.Customer;
 import com.example.cafe_online.entity.CustomerBilling;
+import com.example.cafe_online.entity.User;
 import com.example.cafe_online.repository.customerBillingRepository;
 import com.example.cafe_online.repository.customerRepository;
+import com.example.cafe_online.repository.userRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Service
+@Slf4j
 public class customerServiceImpl implements  customerService {
     private final customerRepository customerRepository;
     private final customerBillingRepository customerBillingRepository;
+    private final userRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     private EmailService emailService;
 
-    public customerServiceImpl(userService userService, customerRepository customerRepository, customerBillingRepository customerBillingRepository) {
+    public customerServiceImpl(userService userService, customerRepository customerRepository, customerBillingRepository customerBillingRepository, userRepository userRepository, PasswordEncoder passwordEncoder) {
         this.customerRepository = customerRepository;
         this.customerBillingRepository = customerBillingRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -35,7 +44,18 @@ public class customerServiceImpl implements  customerService {
         BeanUtils.copyProperties(request,customer);
         customer.setVisitTime(LocalDateTime.now());
         createLoginId(customer);
+        
+        // Save customer (without password)
         customerRepository.save(customer);
+        log.debug("Customer saved: {}", customer.getName());
+        
+        // Save user credentials to User table with encrypted password
+        User user = new User();
+        user.setUserName(request.getUserName());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        userRepository.save(user);
+        log.debug("User credentials saved for username: {}", request.getUserName());
+        
         emailService.sendEmail(
                 customer.getEmail(),
                 customer.getName()
