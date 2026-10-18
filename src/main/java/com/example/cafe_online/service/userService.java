@@ -5,4 +5,6 @@ import org.springframework.http.ResponseEntity;
 
 public interface userService {
     ResponseEntity<?> saveUserDetails(RequestUser requestUser);
+
+    ResponseEntity<?> addUser(RequestUser requestUser);
 }

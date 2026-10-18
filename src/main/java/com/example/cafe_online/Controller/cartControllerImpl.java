@@ -38,4 +38,15 @@ public class cartControllerImpl implements cartController {
             throw new RuntimeException(e);
         }
     }
+
+
+    @Override
+    public ResponseEntity<?> clearCartByUserIdAndProductIdAndQuantity(@RequestParam int userId, @RequestParam int productId, @RequestParam int quantity) {
+        try {
+            return cartService.clearCartByUserIdAndProductIdAndQuantity(userId, productId, quantity);
+        } catch (Exception e) {
+            log.error("Error clearing cart for user ID {}: {}", userId, e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
 }

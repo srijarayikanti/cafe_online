@@ -17,4 +17,7 @@ public class User {
 
     @Column(name = "Password")
     private String password;
+
+    @Column(name = "Role")
+    private String role;
 }

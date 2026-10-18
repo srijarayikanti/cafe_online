@@ -71,6 +71,8 @@ public class SecurityConfig {
                         ).permitAll()
                         // allow login endpoints publicly
                         .requestMatchers("/login/**", "/auth/**").permitAll()
+                        // allow new user registration endpoint publicly
+                        .requestMatchers("/api/customer/customer/saveCustomerDetails").permitAll()
                         // all other requests require authentication
                         .anyRequest().authenticated()
                 );

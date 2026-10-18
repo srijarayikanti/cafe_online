@@ -9,9 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 @SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Cart", description = "Operations related to cart management")
@@ -50,4 +48,27 @@ public interface cartController {
     )
     @CrossOrigin
     ResponseEntity<?> getCartByUserId(@RequestParam int userId);
+
+
+    @Operation(
+            summary = "clear cart by user id, product id and quantity",
+            operationId = "clearCartByUserIdAndProductIdAndQuantity",
+            description = "clear cart by user id, product id and quantity",
+            tags = {"Cart"},
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Cart cleared successfully", content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserCart.class))),
+                    @ApiResponse(responseCode = "404", description = "User or Product not found", content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserCart.class))),
+                    @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserCart.class))),
+            }
+    )
+    @RequestMapping(
+            method = RequestMethod.DELETE,
+            value = "/customer/clearCartByUserIdAndProductIdAndQuantity",
+            produces = "application/json"
+    )
+    @CrossOrigin
+    ResponseEntity<?> clearCartByUserIdAndProductIdAndQuantity(@RequestParam int userId, @RequestParam int productId, @RequestParam int quantity);
 }
