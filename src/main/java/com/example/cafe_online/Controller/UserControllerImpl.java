@@ -23,4 +23,13 @@ private final userService userService;
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public ResponseEntity<?> addUser(RequestUser requestUser) {
+        try {
+            return userService.addUser(requestUser);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

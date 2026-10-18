@@ -45,11 +45,12 @@ public class customerServiceImpl implements  customerService {
         customer.setVisitTime(LocalDateTime.now());
         createLoginId(customer);
         
-        // Save customer (without password)
+        // Save customer with encrypted password
+        customer.setPassword(passwordEncoder.encode(request.getPassword()));
         customerRepository.save(customer);
         log.debug("Customer saved: {}", customer.getName());
         
-        // Save user credentials to User table with encrypted password
+        // Save user credentials to User table with encrypted password (duplicate storage)
         User user = new User();
         user.setUserName(request.getUserName());
         user.setPassword(passwordEncoder.encode(request.getPassword()));

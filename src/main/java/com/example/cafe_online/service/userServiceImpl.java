@@ -30,7 +30,7 @@ public class userServiceImpl implements userService {
     
     @Override
     public ResponseEntity<?> saveUserDetails(RequestUser requestUser) {
-        Optional<User> userOpt = userRepository.findByUserName(requestUser.getUserName());
+        Optional<User> userOpt = userRepository.findByUserNameIgnoreCase(requestUser.getUserName());
         log.debug("Checking if user exists: {}", requestUser.getUserName());
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Username");
@@ -61,8 +61,28 @@ public class userServiceImpl implements userService {
                         "message", "Login Successful",
                         "token", token,
                         "userId", user.getUserId(),
-                        "username", user.getUserName()
+                        "username", user.getUserName(),
+                        "role", user.getRole()
                 )
         );
+    }
+
+    @Override
+    public ResponseEntity<?> addUser(RequestUser requestUser) {
+        Optional<User> userOpt = userRepository.findByUserNameIgnoreCase(requestUser.getUserName());
+        log.debug("Checking if user exists for addition: {}", requestUser.getUserName());
+        if (userOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
+        }
+
+        User newUser = new User();
+        newUser.setUserName(requestUser.getUserName());
+        newUser.setPassword(passwordEncoder.encode(requestUser.getPassword()));
+        newUser.setRole(requestUser.getRole());
+
+        userRepository.save(newUser);
+        log.debug("Added new user: {}", newUser.getUserName());
+
+        return ResponseEntity.ok().body("User added successfully");
     }
 }

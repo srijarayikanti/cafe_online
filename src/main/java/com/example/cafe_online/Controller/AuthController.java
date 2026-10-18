@@ -25,10 +25,11 @@ public class AuthController {
     public ResponseEntity<?> getCurrentUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         
-        return userRepository.findByUserName(username)
+        return userRepository.findByUserNameIgnoreCase(username)
                 .map(user -> ResponseEntity.ok().body(Map.of(
                         "userId", user.getUserId(),
-                        "username", user.getUserName()
+                        "username", user.getUserName(),
+                        "role", user.getRole()
                 )))
                 .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
                         "error", "User not found"

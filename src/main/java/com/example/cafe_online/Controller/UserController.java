@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,4 +34,26 @@ public interface UserController {
     )
     @CrossOrigin
     ResponseEntity<?> saveUserDetails(@RequestBody RequestUser requestUser);
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+            summary="save user details",
+            operationId="saveUserDetails",
+            tags="user",
+            responses = {
+                    @ApiResponse(responseCode = "200",description = "User details saved successfully",content=@Content(mediaType ="application/json",
+                            schema = @Schema(implementation = User.class))),
+                    @ApiResponse(responseCode = "401",description = "Error occurred",content=@Content(mediaType ="application/json",
+                            schema = @Schema(implementation = User.class)))
+
+            }
+    )
+    @RequestMapping(
+            method = RequestMethod.POST,
+            value = "/user/addUser",
+            produces = "application/json",
+            consumes = "application/json"
+    )
+    @CrossOrigin
+    ResponseEntity<?> addUser(@RequestBody RequestUser requestUser);
 }

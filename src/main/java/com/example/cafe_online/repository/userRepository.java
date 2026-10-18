@@ -11,6 +11,5 @@ import java.util.Optional;
 @Repository
 public interface userRepository extends JpaRepository<User,Integer> {
 
-    @Query(value = "SELECT * FROM user WHERE LOWER(user_name) = LOWER(:userName)", nativeQuery = true)
-    Optional<User> findByUserName(String userName);
+    Optional<User> findByUserNameIgnoreCase(String userName);
 }
